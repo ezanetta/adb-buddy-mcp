@@ -1,0 +1,11 @@
+--------- beginning of main
+10-19 13:13:49.384  5313  5385 I Finsky:background: [55] RM: remove resource_request=c17d8109
+10-19 13:13:49.400  6123  6123 D OkHttp  : --> GET https://api.example.com/profile
+10-19 13:13:49.410  6123  6140 W OkHttp  : <-- 500 Internal Server Error (120ms)
+10-19 13:13:49.420  6123  6123 E ProfileRepo: failed to load profile
+10-19 13:13:49.430   498   498 I adbd    : adbd service requested 'shell,v2,raw:getprop'
+--------- beginning of system
+10-19 13:13:49.977   638  2049 I PackageManager: getInstalledPackages: callingUid=2000
+10-19 13:13:50.001  6123  6123 V OkHttp  : verbose detail
+10-19 13:13:50.002  6123  6123 F ProfileRepo: fatal-level line
+this line has no threadtime header and is ignored

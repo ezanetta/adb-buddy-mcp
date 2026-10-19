@@ -2,6 +2,7 @@ package io.github.ezanetta.adbbuddy.adb
 
 import io.github.ezanetta.adbbuddy.parse.DeviceEntry
 import io.github.ezanetta.adbbuddy.parse.DevicesParser
+import io.github.ezanetta.adbbuddy.parse.GetpropParser
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -37,17 +38,56 @@ class AdbClient(
         }
     }
 
+    /** Model, Android version and emulator flag for a ready device, from a single `getprop` call. */
+    suspend fun deviceInfo(entry: DeviceEntry): DeviceInfo {
+        val props = GetpropParser.parse(shell(entry.serial, listOf("getprop")))
+        return DeviceInfo(
+            serial = entry.serial,
+            state = entry.state,
+            model = props["ro.product.model"] ?: entry.properties["model"]?.replace('_', ' '),
+            manufacturer = props["ro.product.manufacturer"],
+            androidVersion = props["ro.build.version.release"],
+            sdk = props["ro.build.version.sdk"]?.toIntOrNull(),
+            isEmulator = entry.isEmulator || props["ro.kernel.qemu"] == "1" || props["ro.boot.qemu"] == "1",
+        )
+    }
+
+    /** PID of the app's main process, or null when it is not running. */
+    suspend fun pidOf(serial: String, packageName: String): Int? =
+        shell(serial, listOf("pidof", packageName), checkExit = false)
+            .trim()
+            .split(' ')
+            .firstNotNullOfOrNull { it.toIntOrNull() }
+
+    /** Dumps logcat in threadtime format. [tail] limits raw lines; [pid] filters by process. */
+    suspend fun logcat(
+        serial: String,
+        buffers: List<String> = emptyList(),
+        pid: Int? = null,
+        tail: Int? = null,
+    ): String {
+        val args = buildList {
+            addAll(listOf("logcat", "-d", "-v", "threadtime"))
+            buffers.forEach { addAll(listOf("-b", it)) }
+            pid?.let { add("--pid=$it") }
+            tail?.let { addAll(listOf("-t", it.toString())) }
+        }
+        return shell(serial, args, timeout = LOGCAT_TIMEOUT)
+    }
+
     /** Runs `adb -s <serial> shell <args>` and returns stdout as text. */
     suspend fun shell(
         serial: String,
         args: List<String>,
         timeout: Duration = defaultTimeout,
         maxOutputBytes: Int = TEXT_CAP_BYTES,
+        checkExit: Boolean = true,
     ): String = run(
         listOf("-s", serial, "shell") + args.map(::shellQuote),
         describe = "adb shell ${args.joinToString(" ")}",
         timeout = timeout,
         maxOutputBytes = maxOutputBytes,
+        checkExit = checkExit,
     ).stdoutText
 
     /** Runs `adb -s <serial> exec-out <args>` and returns raw stdout bytes (no CRLF mangling). */
@@ -72,10 +112,11 @@ class AdbClient(
         describe: String,
         timeout: Duration,
         maxOutputBytes: Int,
+        checkExit: Boolean = true,
     ): ProcessResult {
         val result = runner.run(listOf(adbPath) + args, timeout, maxOutputBytes)
         if (result.timedOut) throw AdbException.Timeout(describe, timeout)
-        if (result.exitCode != 0) {
+        if (checkExit && result.exitCode != 0) {
             throw AdbException.CommandFailed(describe, result.exitCode, result.stderr.ifBlank { result.stdoutText })
         }
         return result
@@ -84,8 +125,19 @@ class AdbClient(
     companion object {
         const val TEXT_CAP_BYTES = 4 * 1024 * 1024
         const val BINARY_CAP_BYTES = 32 * 1024 * 1024
+        val LOGCAT_TIMEOUT = 20.seconds
 
         /** Quotes [arg] for a POSIX shell: wrap in single quotes, escape embedded single quotes. */
         fun shellQuote(arg: String): String = "'" + arg.replace("'", "'\\''") + "'"
     }
 }
+
+data class DeviceInfo(
+    val serial: String,
+    val state: String,
+    val model: String? = null,
+    val manufacturer: String? = null,
+    val androidVersion: String? = null,
+    val sdk: Int? = null,
+    val isEmulator: Boolean = false,
+)

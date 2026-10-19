@@ -15,6 +15,7 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 mcp-kotlin-server = { module = "io.modelcontextprotocol:kotlin-sdk-server", version.ref = "mcp-kotlin" }
 mcp-kotlin-client = { module = "io.modelcontextprotocol:kotlin-sdk-client", version.ref = "mcp-kotlin" }
+mcp-kotlin-testing = { module = "io.modelcontextprotocol:kotlin-sdk-testing", version.ref = "mcp-kotlin" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }

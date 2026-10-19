@@ -28,6 +28,7 @@ dependencies {
     testImplementation(libs.kotest.assertions.core)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mcp.kotlin.client)
+    testImplementation(libs.mcp.kotlin.testing)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 

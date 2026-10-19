@@ -1,0 +1,9 @@
+--------- beginning of system
+10-19 12:00:00.000   638   700 I ActivityManager: Start proc 8000:com.example.app/u0a190 for top-activity
+10-19 12:05:10.250   638  8888 E ActivityManager: ANR in com.example.app (com.example.app/.MainActivity)
+10-19 12:05:10.250   638  8888 E ActivityManager: PID: 8000
+10-19 12:05:10.250   638  8888 E ActivityManager: Reason: Input dispatching timed out (com.example.app/.MainActivity, Waited 5001ms for MotionEvent)
+10-19 12:05:10.250   638  8888 E ActivityManager: Load: 2.1 / 1.8 / 1.5
+10-19 12:05:10.251  8000  8000 I com.example.app: Thread[3,tid=8010,WaitingInMainSignalCatcherLoop] reacting to signal 3
+10-19 12:05:10.260   638  8888 E ActivityManager: CPU usage from 0ms to 5000ms later:
+10-19 12:06:00.000   638   700 I ActivityManager: Process com.example.app (pid 8000) has died

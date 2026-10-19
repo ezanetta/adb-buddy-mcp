@@ -1,0 +1,26 @@
+--------- beginning of crash
+10-19 09:12:01.100  4100  4100 E AndroidRuntime: FATAL EXCEPTION: main
+10-19 09:12:01.100  4100  4100 E AndroidRuntime: Process: com.example.app, PID: 4100
+10-19 09:12:01.100  4100  4100 E AndroidRuntime: java.lang.NullPointerException: old crash
+10-19 09:12:01.100  4100  4100 E AndroidRuntime: 	at com.example.app.OldActivity.onCreate(OldActivity.kt:10)
+10-19 10:00:00.000  5200  5230 E AndroidRuntime: FATAL EXCEPTION: OkHttp Dispatcher
+10-19 10:00:00.000  5200  5230 E AndroidRuntime: Process: com.other.app, PID: 5200
+10-19 10:00:00.000  5200  5230 E AndroidRuntime: java.net.SocketTimeoutException: timeout
+10-19 11:30:45.512  6123  6123 E AndroidRuntime: FATAL EXCEPTION: main
+10-19 11:30:45.512  6123  6123 E AndroidRuntime: Process: com.example.app, PID: 6123
+10-19 11:30:45.513   638   900 I ActivityManager: unrelated interleaved line
+10-19 11:30:45.512  6123  6123 E AndroidRuntime: java.lang.IllegalStateException: Fragment ProfileFragment{a1b2} not attached to a context.
+10-19 11:30:45.512  6123  6123 E AndroidRuntime: 	at androidx.fragment.app.Fragment.requireContext(Fragment.java:972)
+10-19 11:30:45.512  6123  6123 E AndroidRuntime: 	at com.example.app.profile.ProfileFragment.onDataLoaded(ProfileFragment.kt:88)
+10-19 11:30:45.512  6123  6123 E AndroidRuntime: 	at com.example.app.profile.ProfileViewModel$load$1.invokeSuspend(ProfileViewModel.kt:41)
+10-19 11:30:45.512  6123  6123 E AndroidRuntime: Caused by: java.lang.RuntimeException: inner
+10-19 11:30:45.512  6123  6123 E AndroidRuntime: 	... 12 more
+10-19 11:31:02.000  6200  6210 E AndroidRuntime: FATAL EXCEPTION: Thread-3
+10-19 11:31:02.000  6200  6210 E AndroidRuntime: Process: com.example.app:remote, PID: 6200
+10-19 11:31:02.000  6200  6210 E AndroidRuntime: java.lang.OutOfMemoryError: remote process
+10-19 08:00:00.000  7001  7001 F libc    : Fatal signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0 in tid 7001 (main), pid 7001 (com.example.native)
+10-19 08:00:00.200  7050  7050 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+10-19 08:00:00.200  7050  7050 F DEBUG   : Build fingerprint: 'google/sdk_gphone64_arm64/emu64a:15/AE3A.240806.005/12228598:userdebug/dev-keys'
+10-19 08:00:00.200  7050  7050 F DEBUG   : pid: 7001, tid: 7001, name: main  >>> com.example.native <<<
+10-19 08:00:00.200  7050  7050 F DEBUG   : signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0000000000000000
+10-19 08:00:00.201  7050  7050 F DEBUG   :       #00 pc 000000000001a2b4  /data/app/~~x/com.example.native-1/lib/arm64/libnative.so (crash_now+20)

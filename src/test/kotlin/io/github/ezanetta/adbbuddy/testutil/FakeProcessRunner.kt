@@ -33,6 +33,8 @@ class FakeProcessRunner : ProcessRunner {
     }
 }
 
+fun ok(stdout: String = "") = ProcessResult(0, stdout.encodeToByteArray(), "")
+
 fun fixture(name: String): String =
     requireNotNull(object {}.javaClass.getResource("/fixtures/$name")) { "missing fixture $name" }.readText()
 
