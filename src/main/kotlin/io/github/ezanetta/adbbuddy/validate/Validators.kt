@@ -1,6 +1,7 @@
 package io.github.ezanetta.adbbuddy.validate
 
 import io.github.ezanetta.adbbuddy.adb.AdbException
+import java.io.File
 
 /**
  * Input validation for anything that ends up in an adb command line. Arguments are
@@ -75,4 +76,24 @@ object Validators {
             )
         }
     }
+
+    /** Resolves [path] (absolute, relative to the working directory, or `~/...`) to a readable .apk file. */
+    fun apkFile(path: String, workingDir: File = File(System.getProperty("user.dir"))): File {
+        val expanded = if (path.startsWith("~/")) System.getProperty("user.home") + path.substring(1) else path
+        val file = File(expanded).let { if (it.isAbsolute) it else File(workingDir, expanded) }.normalize()
+        when {
+            !file.exists() -> throw AdbException.NotFound("No file at ${file.path}.")
+            !file.isFile -> throw AdbException.InvalidArgument("${file.path} is not a file.")
+            !file.name.endsWith(".apk", ignoreCase = true) ->
+                throw AdbException.InvalidArgument("${file.name} is not an .apk file.")
+            !file.canRead() -> throw AdbException.InvalidArgument("${file.path} is not readable.")
+        }
+        val magic = file.inputStream().use { it.readNBytes(4) }
+        if (!magic.contentEquals(ZIP_MAGIC)) {
+            throw AdbException.InvalidArgument("${file.name} is not a valid APK (not a zip archive).")
+        }
+        return file
+    }
+
+    private val ZIP_MAGIC = byteArrayOf(0x50, 0x4B, 0x03, 0x04)
 }

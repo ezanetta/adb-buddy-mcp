@@ -1,0 +1,4 @@
+package:com.example.zeta
+package:com.example.alpha
+
+package:org.mozilla.firefox

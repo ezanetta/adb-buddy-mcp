@@ -1,6 +1,7 @@
 package io.github.ezanetta.adbbuddy
 
 import io.github.ezanetta.adbbuddy.adb.AdbClient
+import io.github.ezanetta.adbbuddy.tools.registerAppTools
 import io.github.ezanetta.adbbuddy.tools.registerDeviceTools
 import io.github.ezanetta.adbbuddy.tools.registerInputTools
 import io.github.ezanetta.adbbuddy.tools.registerLogTools
@@ -40,4 +41,5 @@ fun createServer(adb: AdbClient): Server = Server(
     registerLogTools(adb)
     registerScreenTools(adb)
     registerInputTools(adb)
+    registerAppTools(adb)
 }

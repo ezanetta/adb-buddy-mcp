@@ -1,0 +1,8 @@
+ACTIVITY MANAGER ACTIVITIES (dumpsys activity activities)
+Display #0 (activities from top to bottom):
+  Stack #1: type=standard mode=fullscreen
+    Task id #12
+      * TaskRecord{9d5c1b2 #12 A=com.example.app U=0 StackId=1 sz=1}
+        Hist #0: ActivityRecord{e0b5f4c u0 com.example.app/com.example.app.ui.MainActivity t12}
+    mResumedActivity: ActivityRecord{e0b5f4c u0 com.example.app/com.example.app.ui.MainActivity t12}
+  mFocusedActivity: ActivityRecord{e0b5f4c u0 com.example.app/com.example.app.ui.MainActivity t12}

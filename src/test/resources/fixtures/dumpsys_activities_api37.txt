@@ -1,0 +1,18 @@
+    mLastPausedActivity: ActivityRecord{88392607 u0 com.google.android.settings.intelligence/.modules.search.SearchActivity t-1 f}}
+    isSleeping=false
+    topResumedActivity=ActivityRecord{247049992 u0 com.android.settings/.homepage.SettingsHomepageActivity t26}
+    * Hist  #0: ActivityRecord{247049992 u0 com.android.settings/.homepage.SettingsHomepageActivity t26}
+      packageName=com.android.settings processName=com.android.settings
+--
+    Resumed: ActivityRecord{247049992 u0 com.android.settings/.homepage.SettingsHomepageActivity t26}
+
+  ResumedActivity: ActivityRecord{247049992 u0 com.android.settings/.homepage.SettingsHomepageActivity t26}
+
+ActivityTaskSupervisor state:
+--
+  mImeParent=ActivityRecord{247049992 u0 com.android.settings/.homepage.SettingsHomepageActivity t26}
+  mRemoteInsetsControlTarget=RemoteInsetsControlTarget{c34bcb9 displayId=0 requestedVisibleTypes=503 animatingTypes=0}
+  mCurrentFocus=Window{27a5172 u0 com.android.settings/com.android.settings.homepage.SettingsHomepageActivity}
+  mFocusedApp=ActivityRecord{247049992 u0 com.android.settings/.homepage.SettingsHomepageActivity t26}
+  mFixedRotationLaunchingApp=null
+

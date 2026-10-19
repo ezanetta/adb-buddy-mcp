@@ -1,11 +1,15 @@
 package io.github.ezanetta.adbbuddy.adb
 
 import io.github.ezanetta.adbbuddy.image.PngScaler
+import io.github.ezanetta.adbbuddy.parse.ActivityParser
+import io.github.ezanetta.adbbuddy.parse.Component
 import io.github.ezanetta.adbbuddy.parse.DeviceEntry
 import io.github.ezanetta.adbbuddy.parse.DevicesParser
 import io.github.ezanetta.adbbuddy.parse.DisplaySize
 import io.github.ezanetta.adbbuddy.parse.DisplaySizeParser
 import io.github.ezanetta.adbbuddy.parse.GetpropParser
+import io.github.ezanetta.adbbuddy.parse.PackagesParser
+import java.io.File
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -128,6 +132,77 @@ class AdbClient(
         shell(serial, listOf("input") + args, timeout = timeout)
     }
 
+    suspend fun thirdPartyPackages(serial: String): List<String> =
+        PackagesParser.parse(shell(serial, listOf("pm", "list", "packages", "-3")))
+
+    suspend fun resumedActivity(serial: String): Component? =
+        ActivityParser.resumedActivity(shell(serial, listOf("dumpsys", "activity", "activities")))
+
+    /** Starts the app's launcher activity and returns it. */
+    suspend fun launchApp(serial: String, packageName: String): Component {
+        requireInstalled(serial, packageName)
+        val resolved = shell(
+            serial,
+            listOf(
+                "cmd", "package", "resolve-activity", "--brief",
+                "-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER", packageName,
+            ),
+        )
+        val component = ActivityParser.resolvedActivity(resolved)
+            ?: throw AdbException.NotFound("$packageName has no launcher activity, so it cannot be launched directly.")
+        // Older `am` versions exit 0 on failure, so the output is checked as well.
+        val start = shellResult(serial, listOf("am", "start", "-n", component.flattened))
+        val output = (start.stdoutText + "\n" + start.stderr).trim()
+        if (start.exitCode != 0 || output.lineSequence().any { it.startsWith("Error") }) {
+            throw AdbException.CommandFailed("adb shell am start -n ${component.flattened}", start.exitCode, output)
+        }
+        return component
+    }
+
+    /**
+     * `adb install -r -t`: installs or replaces the app, keeping its data. `-t` allows test-only
+     * APKs, which is what Android Studio's Run button produces.
+     */
+    suspend fun install(serial: String, apk: File) {
+        val result = host(listOf("-s", serial, "install", "-r", "-t", apk.absolutePath), timeout = INSTALL_TIMEOUT)
+        if ("Success" !in result.stdoutText) {
+            throw AdbException.CommandFailed(
+                "adb install -r -t ${apk.name}",
+                result.exitCode,
+                result.stdoutText + result.stderr,
+            )
+        }
+    }
+
+    suspend fun clearAppData(serial: String, packageName: String) {
+        requireInstalled(serial, packageName)
+        val result = shellResult(serial, listOf("pm", "clear", packageName))
+        if (result.exitCode != 0 || "Success" !in result.stdoutText) {
+            throw AdbException.CommandFailed(
+                "adb shell pm clear $packageName",
+                result.exitCode,
+                (result.stdoutText + result.stderr).trim(),
+            )
+        }
+    }
+
+    private suspend fun requireInstalled(serial: String, packageName: String) {
+        if ("package:" !in shell(serial, listOf("pm", "path", packageName), checkExit = false)) {
+            throw AdbException.NotFound(
+                "$packageName is not installed on $serial. Use list_packages to see installed apps.",
+            )
+        }
+    }
+
+    /** Like [shell] but returns the whole result without checking the exit code. */
+    private suspend fun shellResult(serial: String, args: List<String>): ProcessResult = run(
+        listOf("-s", serial, "shell") + args.map(::shellQuote),
+        describe = "adb shell ${args.joinToString(" ")}",
+        timeout = defaultTimeout,
+        maxOutputBytes = TEXT_CAP_BYTES,
+        checkExit = false,
+    )
+
     /** Runs `adb -s <serial> shell <args>` and returns stdout as text. */
     suspend fun shell(
         serial: String,
@@ -190,6 +265,7 @@ class AdbClient(
         const val BINARY_CAP_BYTES = 32 * 1024 * 1024
         val LOGCAT_TIMEOUT = 20.seconds
         val SCREEN_TIMEOUT = 30.seconds
+        val INSTALL_TIMEOUT = 180.seconds
         const val UI_DUMP_PATH = "/data/local/tmp/adb-buddy-ui.xml"
 
         /** Quotes [arg] for a POSIX shell: wrap in single quotes, escape embedded single quotes. */
