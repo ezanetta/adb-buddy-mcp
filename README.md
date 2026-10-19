@@ -1,5 +1,8 @@
 # adb-buddy
 
+[![Build](https://github.com/ezanetta/adb-buddy-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/ezanetta/adb-buddy-mcp/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **An MCP server that lets Claude (or any MCP client) see, debug and drive your Android devices and emulators through adb.**
 
 Ask *"why did my app just crash?"* and the assistant reads the stack trace, looks at the screen and
@@ -62,7 +65,7 @@ Screen 1080x2424, rotation 0, app com.android.settings. 12 elements; (x,y) is th
 ```
 
 The Gradle toolchain downloads JDK 17 if you don't have it. Prebuilt JARs are attached to every
-CI run as the `adb-buddy-jar` artifact.
+[CI run](https://github.com/ezanetta/adb-buddy-mcp/actions/workflows/build.yml) as the `adb-buddy-jar` artifact.
 
 ## Setup
 
