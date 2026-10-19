@@ -1,5 +1,6 @@
 package io.github.ezanetta.adbbuddy.adb
 
+import io.github.ezanetta.adbbuddy.image.PngScaler
 import io.github.ezanetta.adbbuddy.parse.DeviceEntry
 import io.github.ezanetta.adbbuddy.parse.DevicesParser
 import io.github.ezanetta.adbbuddy.parse.GetpropParser
@@ -75,6 +76,45 @@ class AdbClient(
         return shell(serial, args, timeout = LOGCAT_TIMEOUT)
     }
 
+    /** Raw PNG from `screencap -p`, read through exec-out so the bytes are not mangled. */
+    suspend fun screenshot(serial: String): ByteArray {
+        val result = execOut(serial, listOf("screencap", "-p"), timeout = SCREEN_TIMEOUT)
+        if (result.stdoutTruncated) {
+            throw AdbException.CommandFailed(
+                "adb exec-out screencap -p",
+                0,
+                "screenshot too large",
+            )
+        }
+        if (!PngScaler.isPng(result.stdout)) {
+            throw AdbException.CommandFailed(
+                "adb exec-out screencap -p",
+                0,
+                result.stdoutText.take(200).ifBlank {
+                    result.stderr
+                },
+            )
+        }
+        return result.stdout
+    }
+
+    /** uiautomator XML for the current screen. The temp file lives in /data/local/tmp and is removed afterwards. */
+    suspend fun dumpUi(serial: String): String {
+        val dump = shell(serial, listOf("uiautomator", "dump", UI_DUMP_PATH), timeout = SCREEN_TIMEOUT)
+        if ("dumped to" !in dump) {
+            throw AdbException.CommandFailed(
+                "adb shell uiautomator dump",
+                0,
+                dump.ifBlank { "no output" } + " (the screen may be animating or showing secure content; retry)",
+            )
+        }
+        return try {
+            execOut(serial, listOf("cat", UI_DUMP_PATH), maxOutputBytes = TEXT_CAP_BYTES).stdoutText
+        } finally {
+            shell(serial, listOf("rm", "-f", UI_DUMP_PATH), checkExit = false)
+        }
+    }
+
     /** Runs `adb -s <serial> shell <args>` and returns stdout as text. */
     suspend fun shell(
         serial: String,
@@ -90,18 +130,26 @@ class AdbClient(
         checkExit = checkExit,
     ).stdoutText
 
-    /** Runs `adb -s <serial> exec-out <args>` and returns raw stdout bytes (no CRLF mangling). */
+    /**
+     * Runs `adb -s <serial> exec-out <args>` and returns raw stdout bytes (no CRLF mangling).
+     *
+     * exec-out does not parse arguments the way `sh` does, so quoting cannot be relied on. Only
+     * plain tokens are accepted; this is for internal constants, never for model-supplied input.
+     */
     suspend fun execOut(
         serial: String,
         args: List<String>,
         timeout: Duration = defaultTimeout,
         maxOutputBytes: Int = BINARY_CAP_BYTES,
-    ): ProcessResult = run(
-        listOf("-s", serial, "exec-out") + args.map(::shellQuote),
-        describe = "adb exec-out ${args.joinToString(" ")}",
-        timeout = timeout,
-        maxOutputBytes = maxOutputBytes,
-    )
+    ): ProcessResult {
+        require(args.all { plainToken.matches(it) }) { "exec-out only accepts plain tokens: $args" }
+        return run(
+            listOf("-s", serial, "exec-out") + args,
+            describe = "adb exec-out ${args.joinToString(" ")}",
+            timeout = timeout,
+            maxOutputBytes = maxOutputBytes,
+        )
+    }
 
     /** Runs a host-side adb command such as `devices` or `-s <serial> install`. */
     suspend fun host(args: List<String>, timeout: Duration = defaultTimeout): ProcessResult =
@@ -123,9 +171,13 @@ class AdbClient(
     }
 
     companion object {
+        private val plainToken = Regex("^[A-Za-z0-9_./:=@%+-]+$")
+
         const val TEXT_CAP_BYTES = 4 * 1024 * 1024
         const val BINARY_CAP_BYTES = 32 * 1024 * 1024
         val LOGCAT_TIMEOUT = 20.seconds
+        val SCREEN_TIMEOUT = 30.seconds
+        const val UI_DUMP_PATH = "/data/local/tmp/adb-buddy-ui.xml"
 
         /** Quotes [arg] for a POSIX shell: wrap in single quotes, escape embedded single quotes. */
         fun shellQuote(arg: String): String = "'" + arg.replace("'", "'\\''") + "'"

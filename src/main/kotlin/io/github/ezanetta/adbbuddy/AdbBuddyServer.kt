@@ -3,6 +3,7 @@ package io.github.ezanetta.adbbuddy
 import io.github.ezanetta.adbbuddy.adb.AdbClient
 import io.github.ezanetta.adbbuddy.tools.registerDeviceTools
 import io.github.ezanetta.adbbuddy.tools.registerLogTools
+import io.github.ezanetta.adbbuddy.tools.registerScreenTools
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -36,4 +37,5 @@ fun createServer(adb: AdbClient): Server = Server(
 ) {
     registerDeviceTools(adb)
     registerLogTools(adb)
+    registerScreenTools(adb)
 }

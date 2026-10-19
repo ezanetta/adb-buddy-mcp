@@ -23,6 +23,9 @@ fun main(args: Array<String>) {
         return
     }
 
+    // Screenshots are scaled with AWT; never let it touch a display (or show a Dock icon on macOS).
+    System.setProperty("java.awt.headless", "true")
+
     // stdout carries JSON-RPC only. Keep a handle to the real stream for the transport and point
     // System.out at stderr so a stray println from any library cannot corrupt the protocol.
     val protocolOut = FileOutputStream(FileDescriptor.out)

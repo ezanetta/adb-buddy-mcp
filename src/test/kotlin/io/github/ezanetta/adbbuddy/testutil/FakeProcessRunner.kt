@@ -22,6 +22,9 @@ class FakeProcessRunner : ProcessRunner {
         { ProcessResult(exitCode, stdout.encodeToByteArray(), stderr) },
     )
 
+    fun onArgs(vararg suffix: String, response: (List<String>) -> ProcessResult) =
+        on({ it.takeLast(suffix.size) == suffix.toList() }, response)
+
     fun onDevices(output: String) = onArgs("devices", "-l", stdout = output)
 
     override suspend fun run(command: List<String>, timeout: Duration, maxOutputBytes: Int): ProcessResult {
@@ -37,9 +40,6 @@ fun ok(stdout: String = "") = ProcessResult(0, stdout.encodeToByteArray(), "")
 
 fun fixture(name: String): String =
     requireNotNull(object {}.javaClass.getResource("/fixtures/$name")) { "missing fixture $name" }.readText()
-
-fun fixtureBytes(name: String): ByteArray =
-    requireNotNull(object {}.javaClass.getResource("/fixtures/$name")) { "missing fixture $name" }.readBytes()
 
 const val ONE_EMULATOR =
     "List of devices attached\nemulator-5554\tdevice product:sdk_gphone64_arm64 model:sdk_gphone64_arm64\n"

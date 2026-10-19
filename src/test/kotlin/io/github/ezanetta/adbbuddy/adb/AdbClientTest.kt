@@ -72,4 +72,14 @@ class AdbClientTest {
         shouldThrow<AdbException.Timeout> { client.shell("s", listOf("uiautomator", "dump")) }
             .message shouldContain "timed out"
     }
+
+    @Test
+    fun `exec-out passes plain tokens unquoted and rejects anything else`() = runTest {
+        runner.on({ true }) { ProcessResult(0, ByteArray(0), "") }
+        client.execOut("emulator-5554", listOf("screencap", "-p"))
+        runner.calls.single() shouldBe listOf("-s", "emulator-5554", "exec-out", "screencap", "-p")
+
+        shouldThrow<IllegalArgumentException> { client.execOut("emulator-5554", listOf("cat", "/sdcard/a b")) }
+        shouldThrow<IllegalArgumentException> { client.execOut("emulator-5554", listOf("cat", "x;reboot")) }
+    }
 }
