@@ -16,6 +16,14 @@ failures=0
 
 [[ -f "$JAR" ]] || { echo "Missing $JAR; run ./gradlew shadowJar first." >&2; exit 1; }
 
+# Preflight: the server exits at once if it cannot start (e.g. adb not found). Show why, instead of
+# letting every Inspector check below fail with an opaque "error".
+if ! startup="$(java -jar "$JAR" </dev/null 2>&1)"; then
+  echo "Server failed to start:" >&2
+  echo "$startup" >&2
+  exit 1
+fi
+
 inspect() {
   npx -y "$INSPECTOR" --cli java -jar "$JAR" -q --format json "$@" 2>/dev/null
 }
