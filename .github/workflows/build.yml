@@ -34,7 +34,10 @@ jobs:
         with:
           node-version: 22
 
-      # The runner image ships the Android SDK, so adb is available via ANDROID_HOME.
+      # The server needs an adb binary to start; no device is attached, so the distro package is enough.
+      - name: Install adb
+        run: sudo apt-get update -q && sudo apt-get install -y -q adb
+
       - name: Verify with the MCP Inspector (no device)
         run: scripts/verify-inspector.sh
 
