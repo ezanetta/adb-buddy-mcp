@@ -3,6 +3,8 @@ package io.github.ezanetta.adbbuddy.adb
 import io.github.ezanetta.adbbuddy.image.PngScaler
 import io.github.ezanetta.adbbuddy.parse.DeviceEntry
 import io.github.ezanetta.adbbuddy.parse.DevicesParser
+import io.github.ezanetta.adbbuddy.parse.DisplaySize
+import io.github.ezanetta.adbbuddy.parse.DisplaySizeParser
 import io.github.ezanetta.adbbuddy.parse.GetpropParser
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -113,6 +115,17 @@ class AdbClient(
         } finally {
             shell(serial, listOf("rm", "-f", UI_DUMP_PATH), checkExit = false)
         }
+    }
+
+    /** Current screen size in the current orientation. */
+    suspend fun displaySize(serial: String): DisplaySize =
+        DisplaySizeParser.fromDumpsys(shell(serial, listOf("dumpsys", "window", "displays")))
+            ?: DisplaySizeParser.fromWmSize(shell(serial, listOf("wm", "size")))
+            ?: throw AdbException.CommandFailed("adb shell wm size", 0, "could not determine the screen size")
+
+    /** Runs `input <args>` on the device (tap, swipe, text, keyevent). */
+    suspend fun input(serial: String, args: List<String>, timeout: Duration = defaultTimeout) {
+        shell(serial, listOf("input") + args, timeout = timeout)
     }
 
     /** Runs `adb -s <serial> shell <args>` and returns stdout as text. */

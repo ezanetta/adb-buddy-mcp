@@ -27,4 +27,52 @@ object Validators {
         }
         return value
     }
+
+    const val MAX_INPUT_TEXT = 1000
+
+    /**
+     * Encodes text for `adb shell input text`. The device shell already receives it single-quoted,
+     * so the only transformation left is `input`'s own: a space must be sent as `%s`.
+     * `input text` can only type printable ASCII, so anything else is rejected up front.
+     */
+    fun inputText(value: String): String {
+        if (value.isEmpty()) throw AdbException.InvalidArgument("`text` must not be empty.")
+        if (value.length > MAX_INPUT_TEXT) {
+            throw AdbException.InvalidArgument("`text` is limited to $MAX_INPUT_TEXT characters.")
+        }
+        value.firstOrNull { it !in ' '..'~' }?.let { bad ->
+            val hint = if (bad == '\n' || bad == '\r') " Use press_key ENTER for new lines." else ""
+            throw AdbException.InvalidArgument(
+                "`text` contains an unsupported character (U+%04X). adb input text only types printable ASCII.$hint"
+                    .format(bad.code),
+            )
+        }
+        if ("%s" in value) {
+            throw AdbException.InvalidArgument(
+                "`text` cannot contain the sequence %s: adb input text turns it into a space.",
+            )
+        }
+        return value.replace(" ", "%s")
+    }
+
+    /** Hardware keys the model may press, mapped to Android key event names. */
+    val keys: Map<String, String> = linkedMapOf(
+        "BACK" to "KEYCODE_BACK",
+        "HOME" to "KEYCODE_HOME",
+        "ENTER" to "KEYCODE_ENTER",
+        "APP_SWITCH" to "KEYCODE_APP_SWITCH",
+        "VOLUME_UP" to "KEYCODE_VOLUME_UP",
+        "VOLUME_DOWN" to "KEYCODE_VOLUME_DOWN",
+    )
+
+    fun keyCode(value: String): String = keys[value.trim().uppercase().removePrefix("KEYCODE_")]
+        ?: throw AdbException.InvalidArgument("Unsupported key '$value'. Allowed: ${keys.keys.joinToString()}.")
+
+    fun coordinates(x: Int, y: Int, width: Int, height: Int, label: String = "Point") {
+        if (x !in 0 until width || y !in 0 until height) {
+            throw AdbException.InvalidArgument(
+                "$label ($x,$y) is outside the screen (${width}x$height, valid x 0..${width - 1}, y 0..${height - 1}).",
+            )
+        }
+    }
 }

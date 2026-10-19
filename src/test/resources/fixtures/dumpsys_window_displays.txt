@@ -1,0 +1,12 @@
+WINDOW MANAGER DISPLAY CONTENTS (dumpsys window displays)
+  Display: mDisplayId=0 (organized)
+    init=1080x2424 420dpi mMinSizeOfResizeableTaskDp=220 cur=1080x2424 app=1080x2424 rng=1080x1080-2424x2424
+    deferred=false mLayoutNeeded=false
+  mLastOrientationSource=WindowedMagnification:0:31@77359966
+  deepestLastOrientationSource=ActivityRecord{247049992 u0 com.android.settings/.homepage.SettingsHomepageActivity t26}
+  overrideConfig={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h923dp 420dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1080, 2424) mAppBounds=Rect(0, 0 - 1
+  mHasSetIgnoreOrientationRequest=false ignoreOrientationRequest=false
+  mSleeping=false mAllSleepTokens=[]
+  mLayoutSeq=152
+  mImeWindow=Window{cd41392 u0 InputMethod}
+  mImeLayeringTarget=Window{27a5172 u0 com.android.settings/com.android.settings.homepage.SettingsHomepageActivity}

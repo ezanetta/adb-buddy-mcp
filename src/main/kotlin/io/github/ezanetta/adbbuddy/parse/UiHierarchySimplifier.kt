@@ -97,7 +97,9 @@ object UiHierarchySimplifier {
         val flags = flags(node)
         val interactive = flags.any { it in INTERACTIVE_FLAGS } || className.contains("EditText")
 
-        if (interactive && text.isEmpty() && desc.isEmpty()) {
+        // Scrollable containers hold many items, so they never take their children's text as a label.
+        val absorbsLabel = flags.any { it in LABEL_FLAGS } && "scrollable" !in flags
+        if (absorbsLabel && text.isEmpty() && desc.isEmpty()) {
             // Label a bare clickable container with its children's text, then skip those text-only children.
             // Interactive descendants are still emitted, after this container.
             val position = out.size
@@ -154,7 +156,8 @@ object UiHierarchySimplifier {
         if (node.getAttribute("enabled") == "false") add("disabled")
     }
 
-    private val INTERACTIVE_FLAGS = setOf("clickable", "long-clickable", "scrollable", "checked", "unchecked")
+    private val LABEL_FLAGS = setOf("clickable", "long-clickable", "checked", "unchecked")
+    private val INTERACTIVE_FLAGS = LABEL_FLAGS + "scrollable"
 
     private fun Element.attr(name: String) = getAttribute(name) == "true"
 

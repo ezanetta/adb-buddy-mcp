@@ -27,8 +27,19 @@ class UiHierarchySimplifierTest {
     }
 
     @Test
+    fun `scrollable lists keep their items separate`() {
+        val elements = UiHierarchySimplifier.parse(fixture("ui_search_results.xml")).elements
+
+        elements.single { it.className == "RecyclerView" }.label shouldBe ""
+        elements.map { it.label } shouldContain "Erase all data (factory reset) | System > Reset options"
+        elements.map { it.label } shouldContain "Apps"
+        elements.single { it.className == "EditText" }.label shouldBe
+            "it's a \"test\" \$(id); echo `whoami` & a|b <c> *.kt \\n ~100% done"
+    }
+
+    @Test
     fun `real dumps shrink a lot`() {
-        listOf("ui_settings.xml", "ui_launcher.xml").forEach { name ->
+        listOf("ui_settings.xml", "ui_launcher.xml", "ui_search_results.xml").forEach { name ->
             val xml = fixture(name)
             val text = UiHierarchySimplifier.format(UiHierarchySimplifier.parse(xml))
             text.length shouldBeLessThan xml.length / 8
