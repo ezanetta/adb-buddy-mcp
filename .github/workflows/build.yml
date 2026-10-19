@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Lint, test and build the fat JAR
+        run: ./gradlew check shadowJar --console=plain
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: build/reports/
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # The runner image ships the Android SDK, so adb is available via ANDROID_HOME.
+      - name: Verify with the MCP Inspector (no device)
+        run: scripts/verify-inspector.sh
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v7
+        with:
+          name: adb-buddy-jar
+          path: build/libs/adb-buddy.jar
+          if-no-files-found: error
