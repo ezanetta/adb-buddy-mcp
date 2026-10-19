@@ -1,6 +1,7 @@
 package io.github.ezanetta.adbbuddy
 
 import io.github.ezanetta.adbbuddy.adb.AdbClient
+import io.github.ezanetta.adbbuddy.prompts.registerDebugCrashPrompt
 import io.github.ezanetta.adbbuddy.tools.registerAppTools
 import io.github.ezanetta.adbbuddy.tools.registerDeviceTools
 import io.github.ezanetta.adbbuddy.tools.registerInputTools
@@ -42,4 +43,5 @@ fun createServer(adb: AdbClient): Server = Server(
     registerScreenTools(adb)
     registerInputTools(adb)
     registerAppTools(adb)
+    registerDebugCrashPrompt()
 }
