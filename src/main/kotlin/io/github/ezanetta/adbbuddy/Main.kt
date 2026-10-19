@@ -43,9 +43,11 @@ fun main(args: Array<String>) {
     val transport = StdioServerTransport(System.`in`.asSource().buffered(), protocolOut.asSink().buffered())
 
     runBlocking {
+        // Listen on the transport before connecting: if stdin is already at EOF, the transport can
+        // close inside createSession, before a session.onClose callback could be registered.
         val closed = CompletableDeferred<Unit>()
-        val session = server.createSession(transport)
-        session.onClose { closed.complete(Unit) }
+        transport.onClose { closed.complete(Unit) }
+        server.createSession(transport)
         closed.await()
     }
     logger.info("client disconnected, shutting down")
