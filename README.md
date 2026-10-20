@@ -72,8 +72,13 @@ Screen 1080x2424, rotation 0, app com.android.settings. 12 elements; (x,y) is th
 ./gradlew check              # unit tests + ktlint
 ```
 
-The Gradle toolchain downloads JDK 17 if you don't have it. Prebuilt JARs are attached to every
-[CI run](https://github.com/ezanetta/adb-buddy-mcp/actions/workflows/build.yml) as the `adb-buddy-jar` artifact.
+The Gradle toolchain downloads JDK 17 if you don't have it. Local builds report version `0.1.0-dev`;
+release builds pass the tag's version with `-PreleaseVersion=<x.y.z>`.
+
+Versioned JARs with SHA-256 checksums are published on
+[Releases](https://github.com/ezanetta/adb-buddy-mcp/releases) for every `v*` tag. Every
+[CI run](https://github.com/ezanetta/adb-buddy-mcp/actions/workflows/build.yml) also attaches a dev
+build as the `adb-buddy-jar` artifact. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Setup
 
@@ -221,7 +226,6 @@ see the roadmap.
 - [ ] Unicode text input (via clipboard or an IME helper)
 - [ ] Screen recording (`screenrecord`) returned as a resource
 - [ ] Streamable HTTP transport for remote device farms
-- [ ] Release workflow publishing the JAR to GitHub Releases
 
 ## License
 
