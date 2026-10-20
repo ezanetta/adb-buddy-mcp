@@ -9,10 +9,18 @@ Ask *"why did my app just crash?"* and the assistant reads the stack trace, look
 explains the cause, without you copying logs around. Written in Kotlin on the official
 [MCP Kotlin SDK](https://github.com/modelcontextprotocol/kotlin-sdk), shipped as a single JAR.
 
-<!-- Demo GIFs: record with the emulator side by side with Claude, then replace the placeholders. -->
-| Debugging a crash |
-| --- |
-| <img alt="Android Crash Investigation - Adb buddy" src="https://github.com/user-attachments/assets/8a7c95aa-365f-477e-9d56-e96dd4b45172" /> |
+![Claude Code running debug_crash: it names the exception, the exact line, the probable cause and a fix](docs/demo/debug-crash.png)
+
+*The `debug_crash` prompt on a real crash in a sample app: exception, exact line, probable cause and a
+suggested fix, found with adb-buddy's tools and without changing anything on the device.*
+
+## Quick start
+
+1. Download `adb-buddy-<version>.jar` from [Releases](https://github.com/ezanetta/adb-buddy-mcp/releases)
+   (needs Java 17+ and Android SDK platform-tools).
+2. Add it to Claude Code:
+   `claude mcp add -s user adb-buddy -- java -jar /path/to/adb-buddy-<version>.jar`
+3. Start an emulator or plug in a device, then ask Claude: *"Which devices are connected?"*
 
 ## Features
 
@@ -109,7 +117,7 @@ Desktop apps don't inherit your shell's `PATH`, so set `ANDROID_HOME` (and use a
 - "My app `com.example.shop` just crashed. What happened?" (or run the `debug_crash` prompt)
 - "Show me the warnings from OkHttp in the last 200 log lines."
 - "Open Settings, go to Display and turn on dark theme."
-- "Log in to the app with test@example.com / hunter2 and tell me what the home screen shows."
+- "Log in with our QA test account (qa@example.com / test-password) and tell me what the home screen shows."
 - "Install `app/build/outputs/apk/debug/app-debug.apk`, launch it and take a screenshot."
 
 ## Safety
@@ -130,8 +138,36 @@ adb can do anything to a device, so adb-buddy deliberately exposes a narrow surf
 - **Untrusted XML.** UI dumps are parsed with DTDs disabled (no XXE).
 - **Annotations.** `clear_app_data` and `install_apk` are marked destructive. Keep them behind a
   confirmation in your client.
+- **Privacy.** Screenshots, UI text, logs and anything you ask it to type are sent to your model
+  provider as part of the conversation. Use test accounts and test data, and avoid devices that hold
+  personal information.
 
 Logging goes to stderr only; stdout is reserved for the MCP protocol.
+
+## Design decisions
+
+**Compact UI dumps instead of raw XML.** A uiautomator dump of the Settings home screen is 29 KB of
+XML, mostly layout containers the model can't act on. adb-buddy sends one line per element that can
+be read or tapped, with its center coordinates, so the model gets tap targets directly instead of
+estimating them from a screenshot. A clickable row takes its children's text, so it is one target.
+
+**Downscaled screenshots with a scale factor.** Device screenshots are large (1080x2424, about 1.4 MB
+as PNG). adb-buddy scales them to 1280 px on the longest side by default and states the factor, so
+coordinates read from the image can be converted back to device pixels. Screenshots are for visual
+checks; the UI dump is the better source for taps.
+
+**No generic shell tool.** A "run any command" tool would make every other safeguard optional. A
+fixed set of tools with validated parameters keeps what the model can do reviewable, and lets the
+annotations mean something. The cost is that a new capability needs code.
+
+**Errors as tool results, not exceptions.** MCP separates protocol errors, which clients may not
+show to the model, from tool results with `isError`, which the model reads. Problems such as an
+ambiguous device or an off-screen tap come back as results with a next step ("pass `serial`: one
+of …"), so the model can recover on its own.
+
+**stdio first.** adb runs on the developer's machine, so the server does too. With stdio the client
+starts and stops the process, there is no port to open and nothing to authenticate. Streamable HTTP
+for remote device farms is on the roadmap.
 
 ## Architecture
 
