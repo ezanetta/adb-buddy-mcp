@@ -48,6 +48,12 @@ sealed class AdbException(message: String) : Exception(message) {
             "`$description` timed out after $timeout.",
         )
 
+    class OutputTooLarge(description: String, limitBytes: Int) :
+        AdbException(
+            "`$description` produced more than ${limitBytes / (1024 * 1024)} MB of output. " +
+                "adb-buddy stopped instead of returning partial data.",
+        )
+
     class InvalidArgument(message: String) : AdbException(message)
 
     class NotFound(message: String) : AdbException(message)

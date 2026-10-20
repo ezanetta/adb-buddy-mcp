@@ -66,32 +66,35 @@ class AdbClient(
             .split(' ')
             .firstNotNullOfOrNull { it.toIntOrNull() }
 
-    /** Dumps logcat in threadtime format. [tail] limits raw lines; [pid] filters by process. */
+    /**
+     * Dumps logcat in threadtime format. [tail] limits raw lines; [pid] filters by process.
+     * If the output is over the cap, the newest part is kept and [LogcatDump.truncated] is set.
+     */
     suspend fun logcat(
         serial: String,
         buffers: List<String> = emptyList(),
         pid: Int? = null,
         tail: Int? = null,
-    ): String {
+    ): LogcatDump {
         val args = buildList {
             addAll(listOf("logcat", "-d", "-v", "threadtime"))
             buffers.forEach { addAll(listOf("-b", it)) }
             pid?.let { add("--pid=$it") }
             tail?.let { addAll(listOf("-t", it.toString())) }
         }
-        return shell(serial, args, timeout = LOGCAT_TIMEOUT)
+        val result = run(
+            listOf("-s", serial, "shell") + args.map(::shellQuote),
+            describe = "adb shell ${args.joinToString(" ")}",
+            timeout = LOGCAT_TIMEOUT,
+            maxOutputBytes = TEXT_CAP_BYTES,
+            cap = OutputCap.KEEP_TAIL,
+        )
+        return LogcatDump(result.stdoutText, result.stdoutTruncated)
     }
 
     /** Raw PNG from `screencap -p`, read through exec-out so the bytes are not mangled. */
     suspend fun screenshot(serial: String): ByteArray {
         val result = execOut(serial, listOf("screencap", "-p"), timeout = SCREEN_TIMEOUT)
-        if (result.stdoutTruncated) {
-            throw AdbException.CommandFailed(
-                "adb exec-out screencap -p",
-                0,
-                "screenshot too large",
-            )
-        }
         if (!PngScaler.isPng(result.stdout)) {
             throw AdbException.CommandFailed(
                 "adb exec-out screencap -p",
@@ -249,11 +252,17 @@ class AdbClient(
         timeout: Duration,
         maxOutputBytes: Int,
         checkExit: Boolean = true,
+        cap: OutputCap = OutputCap.KEEP_HEAD,
     ): ProcessResult {
-        val result = runner.run(listOf(adbPath) + args, timeout, maxOutputBytes)
+        val result = runner.run(listOf(adbPath) + args, timeout, maxOutputBytes, cap)
         if (result.timedOut) throw AdbException.Timeout(describe, timeout)
         if (checkExit && result.exitCode != 0) {
             throw AdbException.CommandFailed(describe, result.exitCode, result.stderr.ifBlank { result.stdoutText })
+        }
+        // Partial structured output (XML, dumpsys, a PNG) would parse into wrong answers, so it is an
+        // error. Only callers that keep the tail, such as logcat, accept and report truncation.
+        if (result.stdoutTruncated && cap == OutputCap.KEEP_HEAD) {
+            throw AdbException.OutputTooLarge(describe, maxOutputBytes)
         }
         return result
     }
@@ -282,3 +291,6 @@ data class DeviceInfo(
     val sdk: Int? = null,
     val isEmulator: Boolean = false,
 )
+
+/** logcat text; [truncated] means only the newest part of the output was kept. */
+class LogcatDump(val text: String, val truncated: Boolean)

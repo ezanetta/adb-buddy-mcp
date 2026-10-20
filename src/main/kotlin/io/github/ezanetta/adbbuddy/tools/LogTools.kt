@@ -54,15 +54,16 @@ fun Server.registerLogTools(adb: AdbClient) {
         }
 
         val filtering = tag != null || level != null
-        val raw = adb.logcat(serial, pid = pid, tail = if (filtering) SCAN_WINDOW else limit)
-        val lines = LogcatFilter.filter(LogcatParser.parse(raw), tag, level, limit)
+        val dump = adb.logcat(serial, pid = pid, tail = if (filtering) SCAN_WINDOW else limit)
+        val lines = LogcatFilter.filter(LogcatParser.parse(dump.text), tag, level, limit)
 
         val filters = listOfNotNull(
             packageName?.let { "package=$it (pid $pid)" },
             tag?.let { "tag=$it" },
             level?.let { "level>=${it.letter}" },
         ).ifEmpty { listOf("no filters") }.joinToString(", ")
-        val header = "logcat on $serial, $filters: ${lines.size} line(s)"
+        val header = "logcat on $serial, $filters: ${lines.size} line(s)" +
+            if (dump.truncated) " (logcat output was over the size limit; only its newest part was searched)" else ""
         if (lines.isEmpty()) {
             textResult("$header. No matching lines.")
         } else {
@@ -85,18 +86,24 @@ fun Server.registerLogTools(adb: AdbClient) {
         val crashBuffer = adb.logcat(serial, buffers = listOf("crash"))
         val systemBuffers = adb.logcat(serial, buffers = listOf("main", "system"), tail = SCAN_WINDOW)
         val reports = listOfNotNull(
-            CrashLogExtractor.lastJavaCrash(crashBuffer, packageName),
-            CrashLogExtractor.lastNativeCrash(crashBuffer, packageName),
-            CrashLogExtractor.lastAnr(systemBuffers, packageName),
+            CrashLogExtractor.lastJavaCrash(crashBuffer.text, packageName),
+            CrashLogExtractor.lastNativeCrash(crashBuffer.text, packageName),
+            CrashLogExtractor.lastAnr(systemBuffers.text, packageName),
         ).sortedByDescending { it.timestamp }
+        val truncationNote = if (crashBuffer.truncated || systemBuffers.truncated) {
+            "\n\nNote: logcat output was over the size limit; only its newest part was searched."
+        } else {
+            ""
+        }
 
         if (reports.isEmpty()) {
             textResult(
                 "No crash or ANR found for $packageName on $serial. The log buffers may have been cleared or " +
-                    "rotated; reproduce the crash and call this again, or check get_logcat with level E.",
+                    "rotated; reproduce the crash and call this again, or check get_logcat with level E." +
+                    truncationNote,
             )
         } else {
-            textResult(formatCrashReports(packageName, reports))
+            textResult(formatCrashReports(packageName, reports) + truncationNote)
         }
     }
 }

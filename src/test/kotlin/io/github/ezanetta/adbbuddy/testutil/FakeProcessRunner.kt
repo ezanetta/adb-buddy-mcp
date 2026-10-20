@@ -1,5 +1,6 @@
 package io.github.ezanetta.adbbuddy.testutil
 
+import io.github.ezanetta.adbbuddy.adb.OutputCap
 import io.github.ezanetta.adbbuddy.adb.ProcessResult
 import io.github.ezanetta.adbbuddy.adb.ProcessRunner
 import kotlin.time.Duration
@@ -11,6 +12,7 @@ import kotlin.time.Duration
 class FakeProcessRunner : ProcessRunner {
     private val rules = mutableListOf<Pair<(List<String>) -> Boolean, (List<String>) -> ProcessResult>>()
     val calls = mutableListOf<List<String>>()
+    val caps = mutableListOf<OutputCap>()
 
     fun on(predicate: (List<String>) -> Boolean, response: (List<String>) -> ProcessResult) = apply {
         rules += predicate to response
@@ -27,7 +29,13 @@ class FakeProcessRunner : ProcessRunner {
 
     fun onDevices(output: String) = onArgs("devices", "-l", stdout = output)
 
-    override suspend fun run(command: List<String>, timeout: Duration, maxOutputBytes: Int): ProcessResult {
+    override suspend fun run(
+        command: List<String>,
+        timeout: Duration,
+        maxOutputBytes: Int,
+        cap: OutputCap,
+    ): ProcessResult {
+        caps += cap
         val args = command.drop(1)
         calls += args
         val rule = rules.lastOrNull { it.first(args) }

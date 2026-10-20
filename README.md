@@ -136,8 +136,10 @@ adb can do anything to a device, so adb-buddy deliberately exposes a narrow surf
 - **Validation before execution.** Package names are checked against a strict pattern, keys against an
   allowlist, tap and swipe coordinates against the current screen size (rotation and `wm size`
   overrides included), APK paths for existence, extension and zip signature.
-- **Bounded work.** Every adb command has a timeout and a cap on the bytes it reads. Text sent to the
-  model is limited to 50,000 characters, and the result says when it was truncated.
+- **Bounded work.** Every adb command has a timeout and a cap on the bytes it reads. Over the cap, logs
+  keep their newest part and say so; any other command fails with a clear error rather than return
+  partial data. Text sent to the model is limited to 50,000 characters, and the result says when it
+  was truncated.
 - **Errors are results.** Problems come back as `isError` tool results with an actionable message
   (e.g. listing the connected devices when `serial` is ambiguous), never as stack traces.
 - **Untrusted XML.** UI dumps are parsed with DTDs disabled (no XXE).

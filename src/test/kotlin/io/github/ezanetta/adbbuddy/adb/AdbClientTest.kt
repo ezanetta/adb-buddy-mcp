@@ -82,4 +82,21 @@ class AdbClientTest {
         shouldThrow<IllegalArgumentException> { client.execOut("emulator-5554", listOf("cat", "/sdcard/a b")) }
         shouldThrow<IllegalArgumentException> { client.execOut("emulator-5554", listOf("cat", "x;reboot")) }
     }
+
+    @Test
+    fun `truncated structured output is an error, not partial data`() = runTest {
+        runner.on({ true }) { ProcessResult(0, "<hierarchy".encodeToByteArray(), "", stdoutTruncated = true) }
+        shouldThrow<AdbException.OutputTooLarge> { client.shell("s", listOf("dumpsys", "activity", "activities")) }
+            .message shouldContain "stopped instead of returning partial data"
+        runner.caps.last() shouldBe OutputCap.KEEP_HEAD
+    }
+
+    @Test
+    fun `logcat keeps the newest output and reports truncation`() = runTest {
+        runner.on({ true }) { ProcessResult(0, "newest lines".encodeToByteArray(), "", stdoutTruncated = true) }
+        val dump = client.logcat("s")
+        dump.text shouldBe "newest lines"
+        dump.truncated shouldBe true
+        runner.caps.last() shouldBe OutputCap.KEEP_TAIL
+    }
 }

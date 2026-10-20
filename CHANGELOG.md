@@ -17,7 +17,9 @@ First public release.
 - Destructive tools: `install_apk` (`adb install -r -t`), `clear_app_data` (`pm clear`).
 - `debug_crash` prompt: collects the crash log, a screenshot and the UI hierarchy, then explains the cause.
 - Safety: no generic shell tool, argument-list process execution, single-quoting for the device shell,
-  validation of package names, keys, coordinates and APK files, timeouts and output caps.
+  validation of package names, keys, coordinates and APK files, and timeouts on every adb command.
+- Output caps: logs over the cap keep their newest part and say so; other commands over the cap fail
+  instead of returning partial data.
 - Protocol support for every handshake-era version (`2024-11-05` to `2025-11-25`), verified with the
   MCP Inspector CLI.
 

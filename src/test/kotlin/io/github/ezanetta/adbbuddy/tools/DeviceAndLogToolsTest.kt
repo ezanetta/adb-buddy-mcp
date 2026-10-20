@@ -1,5 +1,6 @@
 package io.github.ezanetta.adbbuddy.tools
 
+import io.github.ezanetta.adbbuddy.adb.ProcessResult
 import io.github.ezanetta.adbbuddy.testutil.FakeProcessRunner
 import io.github.ezanetta.adbbuddy.testutil.ONE_EMULATOR
 import io.github.ezanetta.adbbuddy.testutil.fixture
@@ -124,5 +125,17 @@ class DeviceAndLogToolsTest {
             tool.inputSchema.properties?.keys.orEmpty() shouldContain "serial"
             tool.inputSchema.required.orEmpty() shouldNotContain "serial"
         }
+    }
+
+    @Test
+    fun `log tools say when logcat output was cut`() = withMcpClient(runner) { client ->
+        runner.onDevices(ONE_EMULATOR)
+        runner.on({ "'logcat'" in it }) {
+            ProcessResult(0, fixture("logcat_main.txt").encodeToByteArray(), "", stdoutTruncated = true)
+        }
+
+        client.callTool("get_logcat", mapOf("level" to "E")).text shouldContain "only its newest part was searched"
+        client.callTool("get_crash_log", mapOf("package" to "com.example.app")).text shouldContain
+            "only its newest part was searched"
     }
 }
