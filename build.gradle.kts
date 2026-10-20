@@ -7,7 +7,8 @@ plugins {
 }
 
 group = "io.github.ezanetta"
-version = "0.1.0"
+// Releases pass the tag's version (-PreleaseVersion=0.1.0); local and CI builds are marked as dev builds.
+version = providers.gradleProperty("releaseVersion").getOrElse("0.1.0-dev")
 
 kotlin {
     jvmToolchain(17)

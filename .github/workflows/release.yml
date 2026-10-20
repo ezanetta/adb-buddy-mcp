@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history and tags, for the release notes
+
+      - name: Read version from tag
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "Tag $GITHUB_REF_NAME is not v<semver>" >&2
+            exit 1
+          fi
+          if ! grep -q "^## \[$version\]" CHANGELOG.md; then
+            echo "CHANGELOG.md has no '## [$version]' entry" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Test and build
+        run: ./gradlew check shadowJar -PreleaseVersion=${{ steps.version.outputs.version }} --console=plain
+
+      - name: Check the JAR reports the tag's version
+        run: |
+          reported="$(java -jar build/libs/adb-buddy.jar --version 2>&1)"
+          echo "$reported"
+          [[ "$reported" == "adb-buddy ${{ steps.version.outputs.version }}" ]]
+
+      - name: Prepare assets
+        run: |
+          mkdir -p dist
+          jar="adb-buddy-${{ steps.version.outputs.version }}.jar"
+          cp build/libs/adb-buddy.jar "dist/$jar"
+          (cd dist && sha256sum "$jar" > "$jar.sha256")
+          cat "dist/$jar.sha256"
+
+      - name: Write release notes from commits
+        run: |
+          previous="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          range="${previous:+$previous..}$GITHUB_REF_NAME"
+          {
+            echo "## Changes"
+            echo
+            git log --no-merges --pretty='- %s (%h)' "$range"
+            echo
+            echo "## Install"
+            echo
+            echo '```bash'
+            echo "claude mcp add -s user adb-buddy -- java -jar /path/to/adb-buddy-${{ steps.version.outputs.version }}.jar"
+            echo '```'
+            echo
+            echo "Verify the download: \`sha256sum -c adb-buddy-${{ steps.version.outputs.version }}.jar.sha256\`"
+            echo
+            echo "See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md) for the curated summary."
+          } > dist/notes.md
+          cat dist/notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "adb-buddy ${{ steps.version.outputs.version }}" \
+            --notes-file dist/notes.md \
+            dist/adb-buddy-*.jar dist/adb-buddy-*.jar.sha256
