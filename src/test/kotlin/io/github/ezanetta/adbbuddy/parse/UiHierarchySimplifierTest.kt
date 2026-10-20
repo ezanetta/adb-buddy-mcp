@@ -38,6 +38,13 @@ class UiHierarchySimplifierTest {
     }
 
     @Test
+    fun `settings home matches the README example`() {
+        val xml = fixture("ui_settings.xml")
+        xml.encodeToByteArray().size shouldBe 29_325
+        UiHierarchySimplifier.parse(xml).elements shouldHaveSize 12
+    }
+
+    @Test
     fun `real dumps shrink a lot`() {
         listOf("ui_settings.xml", "ui_launcher.xml", "ui_search_results.xml").forEach { name ->
             val xml = fixture(name)

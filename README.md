@@ -32,14 +32,14 @@ explains the cause, without you copying logs around. Written in Kotlin on the of
 | `install_apk` | Install or update from a local `.apk` (debug builds allowed) | destructive |
 | `clear_app_data` | Wipe an app's data (`pm clear`) | destructive |
 
-Every tool takes an optional `serial`; it is only needed when more than one device is connected.
-Tools carry MCP annotations (`readOnlyHint`, `destructiveHint`), so clients can auto-approve the
-read-only ones and ask before the rest.
+Every tool except `list_devices` takes an optional `serial`; it is only needed when more than one
+device is connected. Tools carry MCP annotations (`readOnlyHint`, `destructiveHint`) that clients
+can use to decide which calls need confirmation.
 
 **Prompt:** `debug_crash(package)` walks the model through crash log → screenshot → UI hierarchy and
 asks for the probable cause and a fix.
 
-A UI dump of the Android Settings home screen, as the model sees it (29 KB of XML in, 12 lines out):
+A UI dump of the Android Settings home screen, as the model sees it (29 KB of XML in, 12 elements out):
 
 ```text
 Screen 1080x2424, rotation 0, app com.android.settings. 12 elements; (x,y) is the center to pass to tap.
@@ -123,7 +123,8 @@ adb can do anything to a device, so adb-buddy deliberately exposes a narrow surf
 - **Validation before execution.** Package names are checked against a strict pattern, keys against an
   allowlist, tap and swipe coordinates against the current screen size (rotation and `wm size`
   overrides included), APK paths for existence, extension and zip signature.
-- **Bounded work.** Every command has a timeout; output is capped and truncation is stated in the result.
+- **Bounded work.** Every adb command has a timeout and a cap on the bytes it reads. Text sent to the
+  model is limited to 50,000 characters, and the result says when it was truncated.
 - **Errors are results.** Problems come back as `isError` tool results with an actionable message
   (e.g. listing the connected devices when `serial` is ambiguous), never as stack traces.
 - **Untrusted XML.** UI dumps are parsed with DTDs disabled (no XXE).
@@ -155,15 +156,16 @@ flowchart LR
 | `adb/AdbLocator.kt` | Finds adb from `ANDROID_HOME`, `ANDROID_SDK_ROOT` or `PATH` |
 | `adb/AdbClient.kt` | Typed adb operations, device selection, device-shell quoting |
 | `adb/AdbException.kt` | Every failure a client can see, with model-friendly messages |
-| `parse/` | Pure parsers for adb output, tested against fixtures captured from a real emulator |
+| `parse/` | Pure parsers for adb output, tested against captured and synthetic fixtures |
 | `tools/` | One file per tool group; thin MCP adapters with schemas and annotations |
 | `validate/Validators.kt` | Input validation and `input text` encoding |
 
 ## Testing
 
-- **Unit tests** (JUnit 5 + Kotest assertions) cover every parser, against fixtures captured from
-  an Android 17 emulator plus synthetic edge cases (interleaved crash logs, rotated screens,
-  XXE payloads, injection attempts).
+- **Unit tests** (JUnit 5 + Kotest assertions) cover every parser. UI dumps, `getprop` and `dumpsys`
+  fixtures were captured from an Android 17 emulator; logcat, crash and device-list fixtures are
+  synthetic, written to cover edge cases (interleaved crash logs, rotated screens, XXE payloads,
+  injection attempts). [Where each fixture comes from](src/test/resources/fixtures/README.md).
 - **Tool tests** run the real MCP server against an in-memory MCP client, with adb replaced by a
   scripted fake that asserts the exact argument lists sent to adb.
 - **Protocol checks** with the MCP Inspector CLI: `scripts/verify-inspector.sh` (add `--device` to
