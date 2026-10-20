@@ -10,9 +10,9 @@ explains the cause, without you copying logs around. Written in Kotlin on the of
 [MCP Kotlin SDK](https://github.com/modelcontextprotocol/kotlin-sdk), shipped as a single JAR.
 
 <!-- Demo GIFs: record with the emulator side by side with Claude, then replace the placeholders. -->
-| Debugging a crash | Driving the UI |
-| --- | --- |
-| ![Claude reading a crash log and explaining it](docs/demo/debug-crash.gif) | ![Claude tapping through Settings](docs/demo/drive-ui.gif) |
+| Debugging a crash |
+| --- |
+| <img alt="Android Crash Investigation - Adb buddy" src="https://github.com/user-attachments/assets/8a7c95aa-365f-477e-9d56-e96dd4b45172" /> |
 
 ## Features
 
